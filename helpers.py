@@ -34,7 +34,7 @@ def extract_all(target: str, output_path: str = ".") -> bool:
 
 def detect_java() -> Union[str, None]:
     try:
-        subprocess.Popen("javax", stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen("java", stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except FileNotFoundError:
         java_home = fuzzy_get(r"(jdk|jre)-(.*)")
         if java_home:
@@ -90,14 +90,15 @@ def get_java() -> bool:
     if sys.platform in dl:
         save_path = f"jdk_bin.{dl[sys.platform].rsplit('.', 1)[1]}"
         if not os.path.isfile(save_path):
-            download_file(dl[sys.platform], save_path)
+            if not download_file(dl[sys.platform], save_path):
+                return False
         print("Extract jre...")
         if extract_all(save_path):
             print("Done")
+            return True
         else:
             print("Extract failed")
-
-
+            return False
 
 
 def download_file(url: str, path: str):
@@ -131,7 +132,7 @@ def progress_bar(present: int, resize: int = 1):
     if not present:
         out = f'\r[{gen_word(size, " ")}] {present}%'
     else:
-        out = f'\r[{gen_word(present // resize, "=")}{gen_word(size - present // resize, " ")}] {present}%'
+        out = f'\r[{gen_word(present // resize, "#")}{gen_word(size - present // resize, " ")}] {present}%'
     sys.stdout.write(out)
     sys.stdout.flush()
 

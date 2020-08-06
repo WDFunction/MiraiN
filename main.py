@@ -25,7 +25,10 @@ def login_success(reg):
 if __name__ == '__main__':
     if not detect_java():
         print("Java not exist, installing...")
-        get_java()
+        if not get_java():
+            print("install failed, exiting...")
+            os.remove(path=fuzzy_get("jdk_bin"))
+            exit(1)
     check_update()
     m = MiraiManager(
         fuzzy_get("mirai-console-wrapper-(.*).jar"),
