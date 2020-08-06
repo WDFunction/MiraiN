@@ -4,16 +4,44 @@ import os
 import re
 import subprocess
 import sys
-from typing import Callable
+import tarfile
+import zipfile
+from typing import Callable, Union
 from urllib.request import urlopen
 
 
-def detect_java() -> bool:
+def fuzzy_get(pattern: str, path: str = ".") -> Union[str, None]:
+    for n in os.listdir(path):
+        if re.match(pattern, n):
+            return n
+
+
+def extract_all(target: str, output_path: str = ".") -> bool:
+    if target.endswith(".gz"):
+        executor = tarfile.open
+    elif target.endswith(".zip"):
+        executor = zipfile.ZipFile
+    else:
+        raise ValueError("Unknown file type {}".format(target.rsplit(".", 1)[1]))
     try:
-        subprocess.Popen("java", stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except FileNotFoundError:
+        with executor(target) as tf:
+            tf.extractall(output_path)
+        return True
+    except Exception as e:
+        print(e)
         return False
-    return True
+
+
+def detect_java() -> Union[str, None]:
+    try:
+        subprocess.Popen("javax", stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        java_home = fuzzy_get(r"(jdk|jre)-(.*)")
+        if java_home:
+            if os.path.join(java_home, "bin/java.exe"):
+                return os.path.join(java_home, "bin/java.exe")
+        return None
+    return "java"
 
 
 def __checker(fl: dict, dr: str):
@@ -48,8 +76,28 @@ def check_update():
                 f.write(b"Pure")
     except Exception as e:
         print("Update Failed:", e)
+        return False
     print("Update complete")
     return True
+
+
+def get_java() -> bool:
+    try:
+        dl = json.loads(urlopen("https://mirai.nullcat.cn/update_jre").read())
+    except ConnectionError as e:
+        print("Unable to connect to update server:", e)
+        return False
+    if sys.platform in dl:
+        save_path = f"jdk_bin.{dl[sys.platform].rsplit('.', 1)[1]}"
+        if not os.path.isfile(save_path):
+            download_file(dl[sys.platform], save_path)
+        print("Extract jre...")
+        if extract_all(save_path):
+            print("Done")
+        else:
+            print("Extract failed")
+
+
 
 
 def download_file(url: str, path: str):
@@ -68,7 +116,10 @@ def download_file(url: str, path: str):
             nl -= len(blk)
             progress_bar(100 - int((nl / length) * 100), 4)
             f.write(blk)
-        print("")
+        if nl:
+            print("\nWarning: Incomplete file")
+        else:
+            print()
 
 
 def gen_word(count: int, w: str) -> str:
@@ -123,8 +174,10 @@ def nt(rule: str, bind_func: Callable):
 
 
 class MiraiManager:
-    def __init__(self, mcon_path: str):
-        self.__process = subprocess.Popen(["java", "-jar", mcon_path, "--update", "keep"],
+    def __init__(self, mcon_path: str, java_path: str = "java"):
+        if not mcon_path:
+            raise ValueError("mirai-console-wrapper path can't empty")
+        self.__process = subprocess.Popen([java_path, "-jar", mcon_path, "--update", "keep"],
                                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def _readline(self) -> bytes:
