@@ -11,6 +11,12 @@ from typing import Callable, Union
 from urllib.request import urlopen
 
 
+if sys.platform == "win32":  # <- Special version
+    encode_type = "gbk"
+else:
+    encode_type = "utf-8"
+
+
 def fuzzy_get(pattern: str, path: str = ".") -> Union[str, None]:
     for n in os.listdir(path):
         if re.match(pattern, n):
@@ -164,7 +170,10 @@ def qt(prefix: str, bind_func: Callable):
         if e:
             info = {}
             for _ in e.group(1).split(", "):
-                k, v = _.split("=", 1)
+                try:
+                    k, v = _.split("=", 1)
+                except ValueError:
+                    return None
                 info[k] = v
             return bind_func(info)
 
@@ -201,8 +210,8 @@ class MiraiManager:
     def listen(self, handlers=None):
         if not handlers:
             handlers = []
-        while not self.__process.poll():
-            data = self._readline().decode("gbk", errors="ignore")
+        while self.is_alive():
+            data = self._readline().decode(encoding=encode_type, errors="ignore")
             print(data)
             for handle in handlers:
                 if handle(data):
@@ -214,7 +223,13 @@ class MiraiManager:
     def kill_process(self):
         self.__process.kill()
 
-    def close(self):
+    def close(self, timeout=30):
         from signal import SIGTERM
         self.__process.send_signal(SIGTERM)  # Ctrl+C
-        self.__process.wait()
+        self.__process.wait(timeout)
+
+    def is_alive(self) -> bool:
+        if self.__process.poll() is None:
+            return True
+        else:
+            return False

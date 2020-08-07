@@ -1,7 +1,7 @@
-import getpass
 import os
+import getpass
 import webbrowser
-
+from threading import Thread
 from helpers import MiraiManager, get_java_path, qt, nt, check_update, get_java, fuzzy_get
 
 
@@ -20,6 +20,12 @@ def on_error(info):
 def login_success(reg):
     # print(reg)
     pass
+
+
+def command_transparent(manager: MiraiManager):
+    while True:
+        cmd = input().split(" ")
+        manager.command_execute(cmd[0], *cmd[1:])
 
 
 if __name__ == '__main__':
@@ -46,6 +52,7 @@ if __name__ == '__main__':
                 print("Please input your qq_num and password.")
     m.login(*(open(".passwd", "r", encoding="utf-8", errors="ignore").read().split(" ", 1)))
     try:
+        Thread(target=command_transparent, args=[m], name="InputListener").start()
         m.listen(
             [
                 qt("Error", on_error),
@@ -57,6 +64,8 @@ if __name__ == '__main__':
         print("Exiting...")
         try:
             m.close()
+            if m.is_alive():
+                m.kill_process()
         except KeyboardInterrupt:
             print("Force exit")
             m.kill_process()
