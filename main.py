@@ -2,7 +2,7 @@ import getpass
 import os
 import webbrowser
 
-from helpers import MiraiManager, detect_java, qt, nt, check_update, get_java, fuzzy_get
+from helpers import MiraiManager, get_java_path, qt, nt, check_update, get_java, fuzzy_get
 
 
 def open_in_browser(info):
@@ -23,7 +23,7 @@ def login_success(reg):
 
 
 if __name__ == '__main__':
-    if not detect_java():
+    if not get_java_path():
         print("Java not exist, installing...")
         if not get_java():
             print("install failed, exiting...")
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     check_update()
     m = MiraiManager(
         fuzzy_get("mirai-console-wrapper-(.*).jar"),
-        detect_java()
+        get_java_path()
     )
     if not os.path.isfile(".passwd"):
         while True:

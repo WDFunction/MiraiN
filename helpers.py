@@ -1,11 +1,12 @@
-import hashlib
-import json
 import os
 import re
-import subprocess
 import sys
+import json
+import shutil
+import hashlib
 import tarfile
 import zipfile
+import subprocess
 from typing import Callable, Union
 from urllib.request import urlopen
 
@@ -28,20 +29,20 @@ def extract_all(target: str, output_path: str = ".") -> bool:
             tf.extractall(output_path)
         return True
     except Exception as e:
-        print(e)
+        print(f"{target}: {e}")
         return False
 
 
-def detect_java() -> Union[str, None]:
-    try:
-        subprocess.Popen("java", stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except FileNotFoundError:
+def get_java_path() -> Union[str, None]:
+    path = shutil.which("java")
+    if not path:
         java_home = fuzzy_get(r"(jdk|jre)-(.*)")
         if java_home:
             if os.path.join(java_home, "bin/java.exe"):
                 return os.path.join(java_home, "bin/java.exe")
         return None
-    return "java"
+    else:
+        return path
 
 
 def __checker(fl: dict, dr: str):
@@ -110,13 +111,18 @@ def download_file(url: str, path: str):
     print(f"File size: {length} ({round(length / 1048576, 2)}MB)")
     with open(path, "wb") as f:
         nl = length
-        while True:
-            blk = conn.read(4096)
-            if not blk:
-                break
-            nl -= len(blk)
-            progress_bar(100 - int((nl / length) * 100), 4)
-            f.write(blk)
+        try:
+            while True:
+                blk = conn.read(4096)
+                if not blk:
+                    break
+                nl -= len(blk)
+                progress_bar(100 - int((nl / length) * 100), 4)
+                f.write(blk)
+        except (OSError, ConnectionError) as e:
+            f.close()
+            os.remove(path)
+            raise e
         if nl:
             print("\nWarning: Incomplete file")
         else:
