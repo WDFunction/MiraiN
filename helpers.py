@@ -189,6 +189,15 @@ def nt(rule: str, bind_func: Callable):
     return __inner
 
 
+def stop_process(manager):
+    print("Stopping...")
+    manager.close()
+    if manager.is_alive():
+        print("Stop fail. kill")
+        manager.kill_process()
+    print("Process Stopped")
+
+
 class MiraiManager:
     def __init__(self, mcon_path: str, java_path: str = "java"):
         if not mcon_path:
@@ -212,6 +221,9 @@ class MiraiManager:
             handlers = []
         while self.is_alive():
             data = self._readline().decode(encoding=encode_type, errors="ignore")
+            if not data:
+                print("Stopping listener")
+                exit(0)
             print(data)
             for handle in handlers:
                 if handle(data):

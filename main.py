@@ -2,7 +2,7 @@ import os
 import getpass
 import webbrowser
 from threading import Thread
-from helpers import MiraiManager, get_java_path, qt, nt, check_update, get_java, fuzzy_get
+from helpers import MiraiManager, get_java_path, qt, nt, check_update, get_java, fuzzy_get, stop_process
 
 
 def open_in_browser(info):
@@ -24,8 +24,14 @@ def login_success(reg):
 
 def command_transparent(manager: MiraiManager):
     while True:
-        cmd = input().split(" ")
-        manager.command_execute(cmd[0], *cmd[1:])
+        try:
+            cmd = input().split(" ")
+        except EOFError:  # Ctrl+Z on Windows
+            cmd = ["stop"]
+        if cmd[0] == "stop":
+            return stop_process(manager)
+        else:
+            manager.command_execute(cmd[0], *cmd[1:])
 
 
 if __name__ == '__main__':
@@ -62,10 +68,4 @@ if __name__ == '__main__':
         )
     except KeyboardInterrupt:
         print("Exiting...")
-        try:
-            m.close()
-            if m.is_alive():
-                m.kill_process()
-        except KeyboardInterrupt:
-            print("Force exit")
-            m.kill_process()
+        stop_process(m)
