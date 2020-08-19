@@ -1,4 +1,5 @@
 import os
+import sys
 import getpass
 import webbrowser
 from threading import Thread
@@ -13,8 +14,9 @@ def open_in_browser(info):
 
 
 def on_error(info):
-    # print(info)
     pass
+    # if info["title"] == "登录失败":
+    #    os.remove(".passwd")
 
 
 def login_success(reg):
@@ -29,7 +31,8 @@ def command_transparent(manager: MiraiManager):
         except EOFError:  # Ctrl+Z on Windows
             cmd = ["stop"]
         if cmd[0] == "stop":
-            return stop_process(manager)
+            stop_process(manager)
+            sys.exit(0)
         else:
             manager.command_execute(cmd[0], *cmd[1:])
 
@@ -58,7 +61,8 @@ if __name__ == '__main__':
                 print("Please input your qq_num and password.")
     m.login(*(open(".passwd", "r", encoding="utf-8", errors="ignore").read().split(" ", 1)))
     try:
-        Thread(target=command_transparent, args=[m], name="InputListener").start()
+        t = Thread(target=command_transparent, args=[m], name="InputListener", daemon=True)
+        t.start()
         m.listen(
             [
                 qt("Error", on_error),

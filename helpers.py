@@ -207,13 +207,11 @@ class MiraiManager:
 
     def _readline(self) -> bytes:
         line = self.__process.stdout.readline().rstrip(b"\r\n")
-        if line and line[0] == 27:
-            return line[5:-8]
-        else:
-            return line
+        return line.lstrip(b"\x1b[0m ").rstrip(b"\x1b[39;49m")
 
     def command_execute(self, cm: str, *args):
-        self.__process.stdin.write(f"{cm} {' '.join(args)}\n".encode())
+        print(cm, args)
+        self.__process.stdin.write(f"{cm} {' '.join(args)}\n".encode(encoding=encode_type, errors="ignore"))
         self.__process.stdin.flush()
 
     def listen(self, handlers=None):
@@ -222,8 +220,8 @@ class MiraiManager:
         while self.is_alive():
             data = self._readline().decode(encoding=encode_type, errors="ignore")
             if not data:
-                print("Stopping listener")
-                exit(0)
+                print("Listener Stopped")
+                sys.exit(0)
             print(data)
             for handle in handlers:
                 if handle(data):
