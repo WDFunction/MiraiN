@@ -3,14 +3,15 @@ import sys
 import getpass
 import webbrowser
 from threading import Thread
-from helpers import MiraiManager, get_java_path, qt, nt, check_update, get_java, fuzzy_get, stop_process
+from helpers import MiraiManager, get_java_path, qt, nt, check_update, \
+    get_java, fuzzy_get, stop_process, fprint
 
 
 def open_in_browser(info):
     if webbrowser.open(info["url"]):
-        print("请在浏览器中继续操作")
+        fprint("请在浏览器中继续操作")
     else:
-        print(f"请手动打开此链接：{info['url']}")
+        fprint(f"请手动打开此链接：{info['url']}")
 
 
 def on_error(info):
@@ -39,9 +40,9 @@ def command_transparent(manager: MiraiManager):
 
 if __name__ == '__main__':
     if not get_java_path():
-        print("Java not exist, installing...")
+        fprint("Java not exist, installing...")
         if not get_java():
-            print("install failed, exiting...")
+            fprint("install failed, exiting...")
             os.remove(path=fuzzy_get("jdk_bin"))
             exit(1)
     check_update()
@@ -55,10 +56,10 @@ if __name__ == '__main__':
             if qq_num and password:
                 with open(".passwd", "w") as f:
                     f.write(" ".join((qq_num, password)))
-                print("password save to .passwd")
+                fprint("password save to .passwd")
                 break
             else:
-                print("Please input your qq_num and password.")
+                fprint("Please input your qq_num and password.")
     m.login(*(open(".passwd", "r", encoding="utf-8", errors="ignore").read().split(" ", 1)))
     try:
         t = Thread(target=command_transparent, args=[m], name="InputListener", daemon=True)
@@ -71,5 +72,5 @@ if __name__ == '__main__':
             ]
         )
     except KeyboardInterrupt:
-        print("Exiting...")
+        fprint("Exiting...")
         stop_process(m)

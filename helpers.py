@@ -10,11 +10,15 @@ import subprocess
 from typing import Callable, Union
 from urllib.request import urlopen
 
-
 if sys.platform == "win32":  # <- Special version
     encode_type = "gbk"
 else:
     encode_type = "utf-8"
+
+
+def fprint(*args):
+    sys.stdout.write("".join(args))
+    sys.stdout.flush()
 
 
 def fuzzy_get(pattern: str, path: str = ".") -> Union[str, None]:
@@ -35,7 +39,7 @@ def extract_all(target: str, output_path: str = ".") -> bool:
             tf.extractall(output_path)
         return True
     except Exception as e:
-        print(f"{target}: {e}")
+        fprint(f"{target}: {e}")
         return False
 
 
@@ -69,22 +73,22 @@ def __checker(fl: dict, dr: str):
 
 
 def check_update():
-    print("Checking update")
+    fprint("Checking update")
     try:
         conn = urlopen("https://mirai.nullcat.cn/update_check")
     except ConnectionError as e:
-        print("Unable to connect to update server:", e)
+        fprint("Unable to connect to update server:", e)
         return False
     try:
         __checker(json.loads(conn.read()), "")
         if not os.path.isfile("content/.wrapper.txt"):
-            print("generate .wrapper.txt")
+            fprint("generate .wrapper.txt")
             with open("content/.wrapper.txt", "wb") as f:
                 f.write(b"Pure")
     except Exception as e:
-        print("Update Failed:", e)
+        fprint("Update Failed:", e)
         return False
-    print("Update complete")
+    fprint("Update complete")
     return True
 
 
@@ -92,29 +96,29 @@ def get_java() -> bool:
     try:
         dl = json.loads(urlopen("https://mirai.nullcat.cn/update_jre").read())
     except ConnectionError as e:
-        print("Unable to connect to update server:", e)
+        fprint("Unable to connect to update server:", e)
         return False
     if sys.platform in dl:
         save_path = f"jdk_bin.{dl[sys.platform].rsplit('.', 1)[1]}"
         if not os.path.isfile(save_path):
             if not download_file(dl[sys.platform], save_path):
                 return False
-        print("Extract jre...")
+        fprint("Extract jre...")
         if extract_all(save_path):
-            print("Done")
+            fprint("Done")
             return True
         else:
-            print("Extract failed")
+            fprint("Extract failed")
             return False
 
 
 def download_file(url: str, path: str):
-    print("Downloading file to", path)
+    fprint("Downloading file to", path)
     conn = urlopen(url)
     if "Content-Length" not in conn.headers:
         raise ConnectionError("Content-Length not found")
     length = int(conn.headers["Content-Length"])
-    print(f"File size: {length} ({round(length / 1048576, 2)}MB)")
+    fprint(f"File size: {length} ({round(length / 1048576, 2)}MB)")
     with open(path, "wb") as f:
         nl = length
         try:
@@ -130,9 +134,9 @@ def download_file(url: str, path: str):
             os.remove(path)
             raise e
         if nl:
-            print("\nWarning: Incomplete file")
+            fprint("\nWarning: Incomplete file")
         else:
-            print()
+            fprint()
 
 
 def gen_word(count: int, w: str) -> str:
@@ -190,12 +194,12 @@ def nt(rule: str, bind_func: Callable):
 
 
 def stop_process(manager):
-    print("Stopping...")
+    fprint("Stopping...")
     manager.close()
     if manager.is_alive():
-        print("Stop fail. kill")
+        fprint("Stop fail. kill")
         manager.kill_process()
-    print("Process Stopped")
+    fprint("Process Stopped")
 
 
 class MiraiManager:
@@ -207,10 +211,9 @@ class MiraiManager:
 
     def _readline(self) -> bytes:
         line = self.__process.stdout.readline().rstrip(b"\r\n")
-        return line.lstrip(b"\x1b[0m ").rstrip(b"\x1b[39;49m")
+        return line
 
     def command_execute(self, cm: str, *args):
-        print(cm, args)
         self.__process.stdin.write(f"{cm} {' '.join(args)}\n".encode(encoding=encode_type, errors="ignore"))
         self.__process.stdin.flush()
 
@@ -219,10 +222,7 @@ class MiraiManager:
             handlers = []
         while self.is_alive():
             data = self._readline().decode(encoding=encode_type, errors="ignore")
-            if not data:
-                print("Listener Stopped")
-                sys.exit(0)
-            print(data)
+            fprint(data)
             for handle in handlers:
                 if handle(data):
                     break
