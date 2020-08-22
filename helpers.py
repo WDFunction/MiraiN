@@ -16,9 +16,8 @@ else:
     encode_type = "utf-8"
 
 
-def fprint(*args):
-    sys.stdout.write("".join(args))
-    sys.stdout.flush()
+def fprint(*args, **kwargs):
+    print(*args, **kwargs)
 
 
 def fuzzy_get(pattern: str, path: str = ".") -> Union[str, None]:
@@ -101,7 +100,8 @@ def get_java() -> bool:
     if sys.platform in dl:
         save_path = f"jdk_bin.{dl[sys.platform].rsplit('.', 1)[1]}"
         if not os.path.isfile(save_path):
-            if not download_file(dl[sys.platform], save_path):
+            download_file(dl[sys.platform], save_path)
+            if not os.path.isfile(save_path):
                 return False
         fprint("Extract jre...")
         if extract_all(save_path):
