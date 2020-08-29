@@ -47,8 +47,12 @@ def get_java_path() -> Union[str, None]:
     if not path:
         java_home = fuzzy_get(r"(jdk|jre)-(.*)")
         if java_home:
-            if os.path.join(java_home, "bin/java.exe"):
-                return os.path.join(java_home, "bin/java.exe")
+            if sys.platform == "win32":
+                suffix = '.exe'
+            else:
+                suffix = ''
+            if os.path.join(java_home, "bin/java" + suffix):
+                return os.path.join(java_home, "bin/java" + suffix)
         return None
     else:
         return path
