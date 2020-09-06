@@ -59,6 +59,9 @@ def __checker(fl: dict, dr: str):
         if isinstance(v, list):
             path = os.path.join(dr, f'{k}-{v[0]}.jar')
             if not os.path.isfile(path):
+                old_file = fuzzy_get(f'{k}-(.*?).jar', dr)
+                if old_file:
+                    os.remove(os.path.join(dr, old_file))
                 download_file(v[1], path)
             else:
                 continue
